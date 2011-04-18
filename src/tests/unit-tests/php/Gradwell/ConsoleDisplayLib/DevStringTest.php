@@ -44,11 +44,11 @@
 
 namespace Gradwell\ConsoleDisplayLib;
 
-class StdErr extends ConsoleDisplay
+class DevStringTest extends \PHPUnit_Framework_TestCase
 {
-        public function __construct()
+        public function testCanCreate()
         {
-                $outputEngine = new StreamOutput('php://stderr');
-                parent::__construct($outputEngine);
+                $output = new DevString();
+                $this->assertTrue ($output->outputEngine instanceof StringOutput);
         }
 }

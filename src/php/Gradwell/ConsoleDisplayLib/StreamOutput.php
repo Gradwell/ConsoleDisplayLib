@@ -1,5 +1,4 @@
 <?php
-
 /**
  * Copyright (c) 2010 Gradwell dot com Ltd.
  * All rights reserved.
@@ -44,11 +43,59 @@
 
 namespace Gradwell\ConsoleDisplayLib;
 
-class StdErr extends ConsoleDisplay
+class StreamOutput implements ConsoleOutputEngine
 {
-        public function __construct()
+        public $target = null;
+
+        public function __construct($target)
         {
-                $outputEngine = new StreamOutput('php://stderr');
-                parent::__construct($outputEngine);
+                $this->target = $target;
+        }
+        
+        public function writePartialLine($stringToOutput)
+        {
+                $fp = \fopen($this->target, 'a+');
+                \fwrite($fp, $stringToOutput);
+                \fclose($fp);
+        }
+
+        public function writeEmptyLines($eolsToWrite = 1)
+        {
+                $stringToOutput = '';
+                for ($i = 0; $i < $eolsToWrite; $i++)
+                {
+                        $stringToOutput .= \PHP_EOL;
+                }
+
+                $this->writePartialLine($stringToOutput);
+        }
+
+        /**
+         * Returns TRUE if our target is a file handle that writes to a
+         * real terminal.
+         *
+         * Returns FALSE is our target is a file handle that writes to a
+         * normal file, or a pipe (for example, the output of this program
+         * is being piped into 'less').
+         *
+         * This is a separate method to assist with the testability of
+         * this class.
+         *
+         * @return boolean
+         */
+        public function supportsColors()
+        {
+                static $isTty = null;
+
+                if ($isTty === null)
+                {
+                        $fp = \fopen($this->target, 'a+');
+                        $isTty = \posix_isatty($fp);
+                        fclose($fp);
+                }
+
+                return $isTty;
         }
 }
+
+?>

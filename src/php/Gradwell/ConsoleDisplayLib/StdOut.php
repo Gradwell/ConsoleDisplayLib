@@ -46,5 +46,9 @@ namespace Gradwell\ConsoleDisplayLib;
 
 class StdOut extends ConsoleDisplay
 {
-        public $target = 'php://stdout';
+        public function __construct()
+        {
+                $outputEngine = new StreamOutput('php://stdout');
+                parent::__construct($outputEngine);
+        }
 }

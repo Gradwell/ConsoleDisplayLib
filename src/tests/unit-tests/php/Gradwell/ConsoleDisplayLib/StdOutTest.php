@@ -46,12 +46,9 @@ namespace Gradwell\ConsoleDisplayLib;
 
 class StdOutTest extends \PHPUnit_Framework_TestCase
 {
-        public function testIsTty()
+        public function testUsesStreamOutput()
         {
-                $stdOut = new StdOut();
-                $fp = \fopen($stdOut->target, 'a+');
-
-                // it fails because of something phpunit does
-                $this->assertFalse($stdOut->isPosixTty($fp));
+                $stdout = new StdOut();
+                $this->assertTrue ($stdout->outputEngine instanceof StreamOutput);
         }
 }

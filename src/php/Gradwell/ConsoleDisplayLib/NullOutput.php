@@ -1,5 +1,4 @@
 <?php
-
 /**
  * Copyright (c) 2010 Gradwell dot com Ltd.
  * All rights reserved.
@@ -44,11 +43,22 @@
 
 namespace Gradwell\ConsoleDisplayLib;
 
-class StdErr extends ConsoleDisplay
+class NullOutput implements ConsoleOutputEngine
 {
-        public function __construct()
+        public function writePartialLine($stringToOutput)
         {
-                $outputEngine = new StreamOutput('php://stderr');
-                parent::__construct($outputEngine);
+                // do nothing
+        }
+
+        public function writeEmptyLines($eolsToWrite = 1)
+        {
+                // do nothing
+        }
+
+        public function supportsColors()
+        {
+                return false;
         }
 }
+
+?>

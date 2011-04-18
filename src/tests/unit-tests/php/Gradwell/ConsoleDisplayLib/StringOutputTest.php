@@ -44,11 +44,61 @@
 
 namespace Gradwell\ConsoleDisplayLib;
 
-class StdErr extends ConsoleDisplay
+class StringOutputTest extends \PHPUnit_Framework_TestCase
 {
-        public function __construct()
+        public function testCanCreate()
         {
-                $outputEngine = new StreamOutput('php://stderr');
-                parent::__construct($outputEngine);
+                $outputEngine = new StringOutput();
+
+                // did it work?
+                $this->assertTrue ($outputEngine instanceof StringOutput);
+        }
+
+        public function testImplementsConsoleOutputEngineInterface()
+        {
+                $outputEngine = new StringOutput();
+
+                // did it work?
+                $this->assertTrue ($outputEngine instanceof ConsoleOutputEngine);
+        }
+
+        public function testCanWriteStrings()
+        {
+                // setup the test
+                $outputEngine = new StringOutput();
+                $testString = 'a test string';
+
+                // perform the test
+                $outputEngine->writePartialLine($testString);
+
+                // did it work?
+                $writtenString = $outputEngine->output;
+                $this->assertEquals($testString, $writtenString);
+        }
+
+        public function testCanWriteBlankLines()
+        {
+                // setup the test
+                $outputEngine = new StringOutput();
+                $expectedString = \PHP_EOL . \PHP_EOL;
+
+                // perform the test
+                $outputEngine->writeEmptyLines(2);
+
+                // did it work?
+                $writtenString = $outputEngine->output;
+                $this->assertEquals($expectedString, $writtenString);
+        }
+
+        public function testCanTestForColorSupport()
+        {
+                // setup the test
+                $outputEngine = new StringOutput();
+
+                // perform the test
+                $allowColors = $outputEngine->supportsColors();
+
+                // check the results
+                $this->assertTrue(is_bool($allowColors));
         }
 }

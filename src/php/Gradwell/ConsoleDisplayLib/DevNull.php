@@ -44,11 +44,11 @@
 
 namespace Gradwell\ConsoleDisplayLib;
 
-class StdErr extends ConsoleDisplay
+class DevNull extends ConsoleDisplay
 {
         public function __construct()
         {
-                $outputEngine = new StreamOutput('php://stderr');
+                $outputEngine = new NullOutput();
                 parent::__construct($outputEngine);
         }
 }

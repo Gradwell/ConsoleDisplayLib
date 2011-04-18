@@ -44,42 +44,11 @@
 
 namespace Gradwell\ConsoleDisplayLib;
 
-class TestTarget extends ConsoleDisplay
-{
-        public $isTty = false;
-        public $target = '';
-
-        public function __construct()
-        {
-                $this->target = \tempnam("/tmp", 'tst');
-        }
-
-        public function __destruct()
-        {
-                \unlink($this->target);
-        }
-
-        public function _getOutput()
-        {
-                return file_get_contents($this->target);
-        }
-
-        public function _resetOutput()
-        {
-                file_put_contents($this->target, '');
-        }
-        
-        public function isPosixTty()
-        {
-                return $this->isTty;
-        }
-}
-
 class ConsoleDisplayTest extends \PHPUnit_Framework_TestCase
 {
         public function testCanGenerateSingleStyle()
         {
-                $consoleDisplay = new ConsoleDisplay();
+                $consoleDisplay = new DevString();
                 $output = $consoleDisplay->style($consoleDisplay->bold);
 
                 $expectedValue = "\033[1m";
@@ -88,7 +57,7 @@ class ConsoleDisplayTest extends \PHPUnit_Framework_TestCase
 
         public function testCanGenerateSeveralStyles()
         {
-                $consoleDisplay = new ConsoleDisplay();
+                $consoleDisplay = new DevString();
                 $output = $consoleDisplay->style(array($consoleDisplay->bold, $consoleDisplay->fgRed));
 
                 $expectedValue = "\033[1;31m";
@@ -97,7 +66,7 @@ class ConsoleDisplayTest extends \PHPUnit_Framework_TestCase
 
         public function testCanResetStyle()
         {
-                $consoleDisplay = new ConsoleDisplay();
+                $consoleDisplay = new DevString();
                 $output = $consoleDisplay->resetStyle();
 
                 $expectedValue = "\033[0m";
@@ -107,18 +76,28 @@ class ConsoleDisplayTest extends \PHPUnit_Framework_TestCase
         public function testCanOutputString()
         {
                 $testString = 'test string';
-                $consoleDisplay = new TestTarget();
+                $consoleDisplay = new DevString();
                 $consoleDisplay->output(null, $testString);
                 $output = $consoleDisplay->_getOutput();
 
                 $this->assertEquals($testString, $output);
         }
 
-        public function testOutputsColorIfTargetIsTty()
+        public function testCanOutputStringAndForgetColor()
         {
                 $testString = 'test string';
-                $consoleDisplay = new TestTarget();
-                $consoleDisplay->isTty = true;
+                $consoleDisplay = new DevString(false);
+                $consoleDisplay->output($testString);
+                $output = $consoleDisplay->_getOutput();
+
+                $this->assertEquals($testString, $output);
+        }
+
+        public function testOutputsColorIfEngineSupportsColor()
+        {
+                $testString = 'test string';
+                $outputEngine =
+                $consoleDisplay = new DevString(true);
 
                 $consoleDisplay->output($consoleDisplay->bgBlack, $testString);
                 $output = $consoleDisplay->_getOutput();
@@ -126,11 +105,10 @@ class ConsoleDisplayTest extends \PHPUnit_Framework_TestCase
                 $this->assertEquals($consoleDisplay->bgBlack . $testString . $consoleDisplay->resetStyle(), $output);
         }
 
-        public function testDoesNotOutputColorIfTargetIsNotTty()
+        public function testDoesNotOutputColorIfEngineDoesNotSupportColor()
         {
                 $testString = 'test string';
-                $consoleDisplay = new TestTarget();
-                $consoleDisplay->isTty = false;
+                $consoleDisplay = new DevString(false);
 
                 $consoleDisplay->output($consoleDisplay->bgBlack, $testString);
                 $outputWithNoColour = $consoleDisplay->_getOutput();
@@ -140,8 +118,7 @@ class ConsoleDisplayTest extends \PHPUnit_Framework_TestCase
                 // to prove it is different, we will now generate the
                 // output with color, and show that they are not the same
 
-                $consoleDisplay->isTty = true;
-                $consoleDisplay->_resetOutput();
+                $consoleDisplay = new DevString(true);
 
                 $consoleDisplay->output($consoleDisplay->bgBlack, $testString);
                 $outputWithColour = $consoleDisplay->_getOutput();
@@ -154,10 +131,20 @@ class ConsoleDisplayTest extends \PHPUnit_Framework_TestCase
         public function testCanOutputTextWithLineEnding()
         {
                 $testString = 'test string';
-                $consoleDisplay = new TestTarget();
-                $consoleDisplay->isTty = false;
+                $consoleDisplay = new DevString(false);
 
                 $consoleDisplay->outputLine($consoleDisplay->bgBlack, $testString);
+                $output = $consoleDisplay->_getOutput();
+
+                $this->assertEquals($testString . \PHP_EOL, $output);
+        }
+
+        public function testCanOutputTextWithLineEndingAndForGetColor()
+        {
+                $testString = 'test string';
+                $consoleDisplay = new DevString(false);
+
+                $consoleDisplay->outputLine($testString);
                 $output = $consoleDisplay->_getOutput();
 
                 $this->assertEquals($testString . \PHP_EOL, $output);
@@ -167,8 +154,7 @@ class ConsoleDisplayTest extends \PHPUnit_Framework_TestCase
         {
                 $testString1 = 'test string 1';
                 $testString2 = ' + test string 2';
-                $consoleDisplay = new TestTarget();
-                $consoleDisplay->isTty = false;
+                $consoleDisplay = new DevString(false);
 
                 $consoleDisplay->output($consoleDisplay->bgBlack, $testString1);
                 $consoleDisplay->outputLine($consoleDisplay->bgBlack, $testString2);
@@ -182,8 +168,7 @@ class ConsoleDisplayTest extends \PHPUnit_Framework_TestCase
                 $testString1 = 'test string 1';
                 $testString2 = ' + test string 2';
 
-                $consoleDisplay = new TestTarget();
-                $consoleDisplay->isTty = true;
+                $consoleDisplay = new DevString(true);
 
                 $consoleDisplay->output($consoleDisplay->fgRed, $testString1);
                 $consoleDisplay->outputLine($consoleDisplay->fgCyan, $testString2);
@@ -198,8 +183,7 @@ class ConsoleDisplayTest extends \PHPUnit_Framework_TestCase
 
         public function testCanOutputBlankLine()
         {
-                $consoleDisplay = new TestTarget();
-                $consoleDisplay->isTty = false;
+                $consoleDisplay = new DevString(false);
 
                 $consoleDisplay->outputBlankLine();
                 $output = $consoleDisplay->_getOutput();
@@ -210,8 +194,7 @@ class ConsoleDisplayTest extends \PHPUnit_Framework_TestCase
         public function testCanOutputBlankLineWithIncompleteLineBefore()
         {
                 $testString = 'test string';
-                $consoleDisplay = new TestTarget();
-                $consoleDisplay->isTty = false;
+                $consoleDisplay = new DevString(false);
 
                 $consoleDisplay->output($consoleDisplay->bgBlack, $testString);
                 $consoleDisplay->outputBlankLine();
@@ -223,8 +206,7 @@ class ConsoleDisplayTest extends \PHPUnit_Framework_TestCase
         public function testCanOutputMultipleLinesAtOnce()
         {
                 $testString = 'test string 1' . \PHP_EOL . 'test string 2';
-                $consoleDisplay = new TestTarget();
-                $consoleDisplay->isTty = false;
+                $consoleDisplay = new DevString(false);
 
                 $consoleDisplay->outputLine(null, $testString);
                 $output = $consoleDisplay->_getOutput();
@@ -234,13 +216,13 @@ class ConsoleDisplayTest extends \PHPUnit_Framework_TestCase
 
         public function testDefaultIndentIsZero()
         {
-                $consoleDisplay = new TestTarget();
+                $consoleDisplay = new DevString();
                 $this->assertEquals(0, $consoleDisplay->getIndent());
         }
 
         public function testCanSetIndent()
         {
-                $consoleDisplay = new TestTarget();
+                $consoleDisplay = new DevString();
                 $this->assertEquals(0, $consoleDisplay->getIndent());
 
                 // make the change
@@ -257,7 +239,7 @@ class ConsoleDisplayTest extends \PHPUnit_Framework_TestCase
 
         public function testCanAddToIndent()
         {
-                $consoleDisplay = new TestTarget();
+                $consoleDisplay = new DevString();
                 $this->assertEquals(0, $consoleDisplay->getIndent());
 
                 // make the change
@@ -286,7 +268,7 @@ class ConsoleDisplayTest extends \PHPUnit_Framework_TestCase
 
         public function testIndentAffectsMultipleLines()
         {
-                $consoleDisplay = new TestTarget();
+                $consoleDisplay = new DevString();
                 $this->assertEquals(0, $consoleDisplay->getIndent());
 
                 // change the indent
@@ -301,7 +283,7 @@ class ConsoleDisplayTest extends \PHPUnit_Framework_TestCase
 
         public function testCanSetAndGetWrapPoint()
         {
-                $consoleDisplay = new TestTarget();
+                $consoleDisplay = new DevString();
                 $this->assertEquals(78, $consoleDisplay->getWrapAt());
 
                 // change the wrap point
@@ -323,7 +305,7 @@ class ConsoleDisplayTest extends \PHPUnit_Framework_TestCase
 
         public function testCanWrapLongStrings()
         {
-                $consoleDisplay = new TestTarget();
+                $consoleDisplay = new DevString();
                 $this->assertEquals(0, $consoleDisplay->getIndent());
                 $this->assertEquals(78, $consoleDisplay->getWrapAt());
 
@@ -335,7 +317,7 @@ class ConsoleDisplayTest extends \PHPUnit_Framework_TestCase
 
         public function testWillWrapWhenAppendingStrings()
         {
-                $consoleDisplay = new TestTarget();
+                $consoleDisplay = new DevString();
                 $this->assertEquals(0, $consoleDisplay->getIndent());
                 $consoleDisplay->setWrapAt(10);
 
@@ -349,7 +331,7 @@ class ConsoleDisplayTest extends \PHPUnit_Framework_TestCase
         
         public function testWillOutputEolsAndWrapWhenAppendingStrings()
         {
-                $consoleDisplay = new TestTarget();
+                $consoleDisplay = new DevString();
                 $this->assertEquals(0, $consoleDisplay->getIndent());
                 $consoleDisplay->setWrapAt(10);
 

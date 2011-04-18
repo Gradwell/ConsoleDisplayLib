@@ -74,8 +74,6 @@ class ConsoleDisplay
         public $doubleUnderlined = 21;
         public $normal = 22;
 
-        public $target = null;
-        
         /**
          * Basic escape sequence string. Use sprintf() to insert escape codes.
          *
@@ -88,6 +86,14 @@ class ConsoleDisplay
 
         // state to track the current line
         protected $currentLineLength = 0;
+
+        // output engine to use
+        public $outputEngine = null;
+
+        public function __construct(ConsoleOutputEngine $outputEngine)
+        {
+                $this->outputEngine = $outputEngine;
+        }
 
         public function style($codes)
         {
@@ -106,19 +112,33 @@ class ConsoleDisplay
                 return \sprintf($this->escapeSequence, $this->default);
         }
 
-        public function output($colors, $string)
+        public function output($colors, $string = null)
         {
-                $this->outputToTarget($this->target, $colors, $string);
+                if ($string === null)
+                {
+                        $this->writePartialLine(null, $colors);
+                }
+                else
+                {
+                        $this->writePartialLine($colors, $string);
+                }
         }
 
-        public function outputLine($colors, $string)
+        public function outputLine($colors, $string = null)
         {
-                $this->outputLineToTarget($this->target, $colors, $string);
+                if ($string === null)
+                {
+                        $this->writeFullLine(null, $colors);
+                }
+                else
+                {
+                        $this->writeFullLine($colors, $string);
+                }
         }
 
         public function outputBlankLine()
         {
-                $this->outputBlankLineToTarget($this->target);
+                $this->writeBlankLine();
         }
 
         public function setIndent($indent)
@@ -146,72 +166,60 @@ class ConsoleDisplay
                 $this->wrapAt = $wrapAt;
         }
         
-        /**
-         * Returns TRUE if $fp is a file handle that writes to a
-         * real terminal.
-         *
-         * Returns FALSE is $fp is a file handle that writes to a normal
-         * file, or a pipe (for example, the output of this program is
-         * being piped into 'less').
-         *
-         * This is a separate method to assist with the testability of
-         * this class.
-         * 
-         * @param resource $fp
-         * @return boolean
-         */
-        public function isPosixTty($fp)
+        protected function writePartialLine($colors, $string)
         {
-                return \posix_isatty($fp);
+                // create the string to output
+                $stringToWrite = '';
+                if ($this->outputEngine->supportsColors())
+                {
+                        $stringToWrite .= $colors;
+                }
+                $stringToWrite .= $this->createWrappedStrings($string);
+                if ($this->outputEngine->supportsColors())
+                {
+                        $stringToWrite .= $this->resetStyle();
+                }
+
+                // output the string
+                $this->outputEngine->writePartialLine($stringToWrite);
         }
 
-        protected function outputToTarget($target, $colors, $string)
+        protected function writeFullLine($colors, $string)
         {
-                $fp = \fopen($target, 'a+');
-                if ($this->isPosixTty($fp))
+                // create the string to output
+                $stringToWrite = '';
+                if ($this->outputEngine->supportsColors())
                 {
-                        \fwrite($fp, $colors);
+                        $stringToWrite .= $colors;
                 }
-                $this->writeWrappedStrings($fp, $string);
-                if ($this->isPosixTty($fp))
+                $stringToWrite .= $this->createWrappedStrings($string);
+                if ($this->outputEngine->supportsColors())
                 {
-                        \fwrite($fp, $this->resetStyle());
+                        $stringToWrite .= $this->resetStyle();
                 }
-                \fclose($fp);
-        }
+                $stringToWrite .= \PHP_EOL;
 
-        protected function outputLineToTarget($target, $colors, $string)
-        {
-                $fp = \fopen($target, 'a+');
-                if ($this->isPosixTty($fp))
-                {
-                        \fwrite($fp, $colors);
-                }
-                $this->writeWrappedStrings($fp, $string);
-                if ($this->isPosixTty($fp))
-                {
-                        \fwrite($fp, $this->resetStyle());
-                }
-                \fwrite($fp, \PHP_EOL);
+                // output the string
+                $this->outputEngine->writePartialLine($stringToWrite);
+
+                // reset the line length afterwards
                 $this->currentLineLength = 0;
-                \fclose($fp);
         }
 
-        protected function outputBlankLineToTarget($target)
+        protected function writeBlankLine()
         {
-                $fp = \fopen($target, 'a+');
-                $string = PHP_EOL;
+                $eolsToWrite = 1;
                 if ($this->currentLineLength !== 0)
                 {
-                        $string .= \PHP_EOL;
+                        $eolsToWrite = 2;
                         $this->currentLineLength = 0;
                 }
-                \fwrite($fp, $string);
-                \fclose($fp);
+                $this->outputEngine->writeEmptyLines($eolsToWrite);
         }
 
-        protected function writeWrappedStrings($fp, $string)
+        protected function createWrappedStrings($string)
         {
+                $return = '';
                 $strings = \explode(PHP_EOL, $string);
                 $append = false;
 
@@ -219,20 +227,25 @@ class ConsoleDisplay
                 {
                         if ($append)
                         {
-                                \fwrite($fp, \PHP_EOL);
+                                $return .= \PHP_EOL;
                                 $this->currentLineLength = 0;
                         }
                         $append = true;
                         if (\strlen($string) > 0)
                         {
-                                $this->writeWrappedString($fp, $string);
+                                $return .= $this->createWrappedString($string);
 
                         }
                 }
+
+                // all done
+                return $return;
         }
 
-        protected function writeWrappedString($fp, $string)
+        protected function createWrappedString($string)
         {
+                $return = '';
+
                 // what will we split the line on?
                 $separators = array(' ' => true, '\\' => true, '/' => true);
 
@@ -243,13 +256,13 @@ class ConsoleDisplay
                 while (\strlen($string) > 0)
                 {
                         // step 1: are we at the beginning of the line?
-                        $this->outputLineIndent($fp);
+                        $return .= $this->createLineIndent();
 
                         // step 2: do we need to split the line?
                         if (!$this->doesStringNeedWrapping($string))
                         {
                                 // no; just output and go
-                                \fwrite($fp, $string);
+                                $return .= $string;
                                 $this->currentLineLength += \strlen($string);
                                 $string = '';
                         }
@@ -275,7 +288,7 @@ class ConsoleDisplay
 
                                 if ($wrapPoint > 0)
                                 {
-                                        \fwrite($fp, \substr($string, 0, $wrapPoint) . \PHP_EOL);
+                                        $return .= \substr($string, 0, $wrapPoint) . \PHP_EOL;
                                         if (isset($whitespace[$string{$wrapPoint}]))
                                         {
                                                 $wrapPoint++;
@@ -284,22 +297,29 @@ class ConsoleDisplay
                                 }
                                 else
                                 {
-                                        \fwrite($fp, PHP_EOL);
+                                        $return .= PHP_EOL;
                                 }
                                 $this->currentLineLength = 0;
                         }
                 }
+
+                // all done
+                return $return;
         }
 
-        protected function outputLineIndent($fp)
+        protected function createLineIndent()
         {
+                $return = '';
+
                 if ($this->currentLineLength < $this->indent)
                 {
                         $indent = $this->indent - $this->currentLineLength;
                         // we need to write out the indent
-                        \fwrite($fp, \str_repeat(' ', $indent));
+                        $return .= \str_repeat(' ', $indent);
                         $this->currentLineLength += $indent;
                 }
+
+                return $return;
         }
 
         protected function doesStringNeedWrapping($string)

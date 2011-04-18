@@ -44,11 +44,23 @@
 
 namespace Gradwell\ConsoleDisplayLib;
 
-class StdErr extends ConsoleDisplay
+class DevString extends ConsoleDisplay
 {
-        public function __construct()
+        public function __construct($allowColors = false)
         {
-                $outputEngine = new StreamOutput('php://stderr');
+                $outputEngine = new StringOutput();
+                $outputEngine->allowColors = $allowColors;
+
                 parent::__construct($outputEngine);
+        }
+
+        public function _getOutput()
+        {
+                return $this->outputEngine->output;
+        }
+
+        public function _resetOutput()
+        {
+                $this->outputEngine->output = '';
         }
 }
