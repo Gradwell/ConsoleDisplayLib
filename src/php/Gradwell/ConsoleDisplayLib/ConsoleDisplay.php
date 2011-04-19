@@ -219,6 +219,9 @@ class ConsoleDisplay
 
         protected function createWrappedStrings($string)
         {
+                // this is to ensure deterministic behaviour
+                static $lastRtrim = '';
+
                 $return = '';
                 $strings = \explode(PHP_EOL, $string);
                 $append = false;
@@ -230,12 +233,33 @@ class ConsoleDisplay
                                 $return .= \PHP_EOL;
                                 $this->currentLineLength = 0;
                         }
-                        $append = true;
+                        else
+                        {
+                                $append = true;
+                                if (\strlen($string) > 0)
+                                {
+                                        $return = $lastRtrim;
+                                }
+
+                                $lastRtrim = '';
+                        }
+                        
                         if (\strlen($string) > 0)
                         {
                                 $return .= $this->createWrappedString($string);
-
                         }
+                }
+
+
+                // is there whitespace we need to chop?
+                $rtrimmedString = rtrim($return, ' ');
+                $rtrimmedLen    = strlen($rtrimmedString);
+                $returnLen      = strlen($return);
+
+                if ($rtrimmedLen !== $returnLen)
+                {
+                        $lastRtrim = substr($return, $returnLen);
+                        $return    = $rtrimmedString;
                 }
 
                 // all done

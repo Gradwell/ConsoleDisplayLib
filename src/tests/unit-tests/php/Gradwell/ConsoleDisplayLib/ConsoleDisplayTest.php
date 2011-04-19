@@ -342,4 +342,30 @@ class ConsoleDisplayTest extends \PHPUnit_Framework_TestCase
 
                 $this->assertEquals('1234567890' . \PHP_EOL . '1234567890' . \PHP_EOL, $output);
         }
+
+        public function testWillNotOutputWhitespaceAtEndOfWrappedLines()
+        {
+                $consoleDisplay = new DevString();
+                $this->assertEquals(0, $consoleDisplay->getIndent());
+                $consoleDisplay->setWrapAt(10);
+                $expectedString = 'this is a' . \PHP_EOL . 'long' . \PHP_EOL . 'string to' . \PHP_EOL . 'be wrapped' . \PHP_EOL;
+
+                // wrap a long string
+                $consoleDisplay->outputLine(null, 'this is a long string to be wrapped');
+                $output = $consoleDisplay->_getOutput();
+
+                $this->assertEquals($expectedString, $output);
+
+                // what happens if we try trickle-feed the input?
+                $consoleDisplay = new DevString();
+                $consoleDisplay->setWrapAt(10);
+
+                $consoleDisplay->output(null, 'this is a ');
+                $consoleDisplay->output(null, 'long ');
+                $consoleDisplay->output(null, 'string to ');
+                $consoleDisplay->outputLine(null, 'be wrapped');
+
+                $output = $consoleDisplay->_getOutput();
+                $this->assertEquals($expectedString, $output);
+        }
 }
