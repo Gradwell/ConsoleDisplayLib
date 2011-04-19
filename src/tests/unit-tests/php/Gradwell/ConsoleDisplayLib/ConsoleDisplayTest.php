@@ -367,5 +367,17 @@ class ConsoleDisplayTest extends \PHPUnit_Framework_TestCase
 
                 $output = $consoleDisplay->_getOutput();
                 $this->assertEquals($expectedString, $output);
+
+                // this problem has been seen with phix
+                $expectedString = '    * Phix_Project\PhixExtensions\DummyCommandWithSwitches' . \PHP_EOL;
+                $consoleDisplay = new DevString();
+                $consoleDisplay->setWrapAt(78);
+
+                $consoleDisplay->setIndent(4);
+                $consoleDisplay->output(null, '* ');
+                $consoleDisplay->outputLine(null, 'Phix_Project\PhixExtensions\DummyCommandWithSwitches');
+
+                $output = $consoleDisplay->_getOutput();
+                $this->assertEquals($expectedString, $output);
         }
 }

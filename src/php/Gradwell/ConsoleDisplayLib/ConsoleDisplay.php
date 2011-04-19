@@ -222,46 +222,68 @@ class ConsoleDisplay
                 // this is to ensure deterministic behaviour
                 static $lastRtrim = '';
 
+                // var_dump('createWrappedStrings called');
+                // var_dump($lastRtrim);
+                
                 $return = '';
                 $strings = \explode(PHP_EOL, $string);
                 $append = false;
 
                 foreach ($strings as $string)
                 {
+                        // general case
                         if ($append)
                         {
                                 $return .= \PHP_EOL;
                                 $this->currentLineLength = 0;
+
+                                if (\strlen($string) > 0)
+                                {
+                                        $return .= $this->createWrappedString($string);
+                                }
                         }
                         else
                         {
                                 $append = true;
+                                // var_dump('loop string: ' . $string);
+                                // var_dump('strlen(trim): '  . strlen(trim($string)));
+                                
                                 if (\strlen($string) > 0)
                                 {
-                                        $return = $lastRtrim;
-                                }
+                                        $return = $this->createWrappedString($string);
 
+                                        if (substr($return, 0, strlen(\PHP_EOL)) != \PHP_EOL)
+                                        {
+                                                // we need the whitespace adding
+                                                $return = $lastRtrim . $return;
+                                        }
+                                }
+                                
                                 $lastRtrim = '';
                         }
                         
-                        if (\strlen($string) > 0)
-                        {
-                                $return .= $this->createWrappedString($string);
-                        }
                 }
-
 
                 // is there whitespace we need to chop?
                 $rtrimmedString = rtrim($return, ' ');
                 $rtrimmedLen    = strlen($rtrimmedString);
                 $returnLen      = strlen($return);
 
+                // var_dump('string: ' . $string);
+                // var_dump('return: ' . $return);
+                // var_dump('rtrimmedString: ' . $rtrimmedString);
+                // var_dump('rtrimmedLen: ' . $rtrimmedLen);
+                // var_dump('returnLen: ' . $returnLen);
+                
                 if ($rtrimmedLen !== $returnLen)
                 {
-                        $lastRtrim = substr($return, $returnLen);
+                        $lastRtrim = substr($return, $rtrimmedLen);
                         $return    = $rtrimmedString;
                 }
 
+                // var_dump('lastRtrim: ' . $lastRtrim);
+                // var_dump('return: ' . $return);
+                
                 // all done
                 return $return;
         }
