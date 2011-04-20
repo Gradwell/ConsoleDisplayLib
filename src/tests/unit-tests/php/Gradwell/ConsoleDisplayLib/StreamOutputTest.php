@@ -44,6 +44,35 @@
 
 namespace Gradwell\ConsoleDisplayLib;
 
+if (!function_exists('ncurses_init'))
+{
+        function ncurses_init()
+        {
+                // do nothing
+        }
+
+        function ncurses_newwin()
+        {
+                // do nothing
+        }
+
+        function ncurses_wrefresh()
+        {
+                // do nothing
+        }
+
+        function ncurses_getmaxyx($window, &$height, &$width)
+        {
+                $width = 80;
+                $height = 24;
+        }
+
+        function ncurses_end()
+        {
+                // do nothing
+        }
+}
+
 class StreamOutputTest extends \PHPUnit_Framework_TestCase
 {
         public function testCanCreate()

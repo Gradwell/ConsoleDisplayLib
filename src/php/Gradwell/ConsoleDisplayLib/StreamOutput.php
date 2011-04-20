@@ -63,20 +63,54 @@ class StreamOutput implements ConsoleOutputEngine
                         return $defaultHint;
                 }
 
-                $hint = \getenv('COLUMNS');
-                if (!$hint)
+                // is the ncurses extension installed?
+                $hint = $this->getScreenWidthFromNcurses();
+                if (\is_numeric($hint))
                 {
-                        return $defaultHint;
+                        // @codeCoverageIgnoreStart
+                        return $hint;
+                        // @codeCoverageIgnoreEnd
                 }
 
+                // is the shell giving us a hint?
+                $hint = \getenv('COLUMNS');
                 if (\is_numeric($hint))
                 {
                         return $hint;
                 }
 
+                // nope, we'll just have to fall back on the default!
                 return $defaultHint;
         }
 
+        protected function getScreenWidthFromNcurses()
+        {
+                // @codeCoverageIgnoreStart
+                if (!function_exists('ncurses_getmaxyx'))
+                {
+                        return false;
+                }
+                // @codeCoverageIgnoreEnd
+
+                $screenWidth  = 0;
+                $screenHeight = 0;
+
+                if (!$this->isReallyATty())
+                {
+                        return false;
+                }
+
+                // @codeCoverageIgnoreStart
+                ncurses_init();
+                $fullscreen = ncurses_newwin ( 0, 0, 0, 0);
+                ncurses_wrefresh($fullscreen);
+                ncurses_getmaxyx ($fullscreen, $screenHeight, $screenWidth);
+                ncurses_end();
+
+                return $screenWidth;
+                // @codeCoverageIgnoreEnd
+        }
+        
         public function writePartialLine($stringToOutput)
         {
                 $fp = \fopen($this->target, 'a+');
@@ -128,6 +162,18 @@ class StreamOutput implements ConsoleOutputEngine
                         return true;
                 }
 
+                if ($isTty === null)
+                {
+                        $isTty = $this->isReallyATty();
+                }
+
+                return $isTty;
+        }
+
+        protected function isReallyATty()
+        {
+                static $isTty = null;
+                
                 if ($isTty === null)
                 {
                         $fp = \fopen($this->target, 'a+');
