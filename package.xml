@@ -7,7 +7,7 @@
   <channel>pear.gradwell.com</channel>
   <summary>A simple library for CLI apps to output to the console</summary>
   <description>
-    Description goes here
+    ConsoleDisplayLib is a simple reusable library for writing word-wrapped output to a terminal, possibly in colour.
   </description>
   <lead>
     <name>Stuart Herbert</name>
