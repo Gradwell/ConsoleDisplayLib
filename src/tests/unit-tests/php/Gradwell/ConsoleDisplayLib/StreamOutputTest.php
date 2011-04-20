@@ -124,4 +124,42 @@ class StreamOutputTest extends \PHPUnit_Framework_TestCase
                 // like a little more complicated
                 $this->assertTrue(is_bool($allowColors));
         }
+
+        public function testCanGetTerminalWidth()
+        {
+                //
+                // what happens if there is no COLUMNS set?
+                //
+
+                $outputEngine = new StreamOutput('php://stdout');
+                $outputEngine->forceTty();
+
+                // perform the test
+                $this->assertFalse(getenv('COLUMNS'));
+                $this->assertEquals(78, $outputEngine->getColumnsHint());
+
+                //
+                // and if we set COLUMNS to something sensible?
+                //
+                
+                putenv('COLUMNS=10');
+                $outputEngine = new StreamOutput('php://stdout');
+                $outputEngine->forceTty();
+
+                // perform the test
+                $this->assertEquals(10, getenv('COLUMNS'));
+                $this->assertEquals(10, $outputEngine->getColumnsHint());
+
+                //
+                // and if we set COLUMNS to something stupid?
+                //
+
+                putenv('COLUMNS=');
+                $outputEngine = new StreamOutput('php://stdout');
+                $outputEngine->forceTty();
+
+                // perform the test
+                $this->assertEquals('', getenv('COLUMNS'));
+                $this->assertEquals(78, $outputEngine->getColumnsHint());
+        }
 }

@@ -93,6 +93,7 @@ class ConsoleDisplay
         public function __construct(ConsoleOutputEngine $outputEngine)
         {
                 $this->outputEngine = $outputEngine;
+                $this->setWrapFromOutput();
         }
 
         public function style($codes)
@@ -164,6 +165,11 @@ class ConsoleDisplay
         public function setWrapAt($wrapAt)
         {
                 $this->wrapAt = $wrapAt;
+        }
+
+        public function setWrapFromOutput()
+        {
+                $this->wrapAt = $this->outputEngine->getColumnsHint();
         }
         
         protected function writePartialLine($colors, $string)

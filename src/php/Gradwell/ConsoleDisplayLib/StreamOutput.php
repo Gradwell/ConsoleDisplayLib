@@ -47,11 +47,36 @@ class StreamOutput implements ConsoleOutputEngine
 {
         public $target = null;
 
+        protected $forceTty = false;
+
         public function __construct($target)
         {
                 $this->target = $target;
         }
-        
+
+        public function getColumnsHint()
+        {
+                $defaultHint = 78;
+
+                if (!$this->isatty())
+                {
+                        return $defaultHint;
+                }
+
+                $hint = \getenv('COLUMNS');
+                if (!$hint)
+                {
+                        return $defaultHint;
+                }
+
+                if (\is_numeric($hint))
+                {
+                        return $hint;
+                }
+
+                return $defaultHint;
+        }
+
         public function writePartialLine($stringToOutput)
         {
                 $fp = \fopen($this->target, 'a+');
@@ -85,7 +110,23 @@ class StreamOutput implements ConsoleOutputEngine
          */
         public function supportsColors()
         {
+                return $this->isatty();
+        }
+
+        public function forceTty()
+        {
+                $this->forceTty = true;
+        }
+        
+        protected function isatty()
+        {
                 static $isTty = null;
+
+                // yuck ... for unit testing purposes
+                if ($this->forceTty)
+                {
+                        return true;
+                }
 
                 if ($isTty === null)
                 {

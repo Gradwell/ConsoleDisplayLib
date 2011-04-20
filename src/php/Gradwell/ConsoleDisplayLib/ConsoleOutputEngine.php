@@ -46,6 +46,8 @@ namespace Gradwell\ConsoleDisplayLib;
 
 interface ConsoleOutputEngine
 {
+        public function getColumnsHint();
+        
         public function writePartialLine($stringToOutput);
         public function writeEmptyLines($eolsToWrite = 1);
 

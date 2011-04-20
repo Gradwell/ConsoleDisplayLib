@@ -45,6 +45,12 @@ namespace Gradwell\ConsoleDisplayLib;
 
 class NullOutput implements ConsoleOutputEngine
 {
+        public function getColumnsHint()
+        {
+                // just in case it ever gets called!
+                return 78;
+        }
+        
         public function writePartialLine($stringToOutput)
         {
                 // do nothing

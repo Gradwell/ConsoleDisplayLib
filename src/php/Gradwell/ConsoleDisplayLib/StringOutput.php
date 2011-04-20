@@ -48,6 +48,11 @@ class StringOutput implements ConsoleOutputEngine
         public $output = '';
         public $allowColors = false;
 
+        public function getColumnsHint()
+        {
+                return 78;
+        }
+
         public function writePartialLine($stringToOutput)
         {
                 $this->output .= $stringToOutput;
