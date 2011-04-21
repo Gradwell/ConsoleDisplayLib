@@ -176,8 +176,11 @@ class StreamOutputTest extends \PHPUnit_Framework_TestCase
                 $outputEngine->forceTty();
 
                 // perform the test
+                //
+                // we always leave a 2-character margin at the right hand
+                // side of the screen for readability purposes
                 $this->assertEquals(10, getenv('COLUMNS'));
-                $this->assertEquals(10, $outputEngine->getColumnsHint());
+                $this->assertEquals(8, $outputEngine->getColumnsHint());
 
                 //
                 // and if we set COLUMNS to something stupid?

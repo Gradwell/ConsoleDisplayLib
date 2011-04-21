@@ -68,6 +68,14 @@ class StreamOutput implements ConsoleOutputEngine
                 if (\is_numeric($hint))
                 {
                         // @codeCoverageIgnoreStart
+                        //
+                        // we always leave a small margin on the right
+                        // hand side, to make sure that the text is easy
+                        // to read ... just like the man command does
+                        if ($hint > 2)
+                        {
+                                $hint -=2;
+                        }
                         return $hint;
                         // @codeCoverageIgnoreEnd
                 }
@@ -76,6 +84,13 @@ class StreamOutput implements ConsoleOutputEngine
                 $hint = \getenv('COLUMNS');
                 if (\is_numeric($hint))
                 {
+                        // we always leave a small margin on the right
+                        // hand side, to make sure that the text is easy
+                        // to read ... just like the man command does
+                        if ($hint > 2)
+                        {
+                                $hint -=2;
+                        }
                         return $hint;
                 }
 
